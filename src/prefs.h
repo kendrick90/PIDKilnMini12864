@@ -141,6 +141,14 @@ char tmp[30];
         Prefs[PRF_WIFI_RETRY_CNT].type=UINT8;
         Prefs[PRF_WIFI_RETRY_CNT].value.uint8=6;
         break;
+      case PRF_WIFI_AP_NAME:
+        Prefs[PRF_WIFI_AP_NAME].type=STRING;
+        Prefs[PRF_WIFI_AP_NAME].value.str=strdup("PIDKiln_AP");
+        break;
+      case PRF_WIFI_AP_PASS:
+        Prefs[PRF_WIFI_AP_PASS].type=STRING;
+        Prefs[PRF_WIFI_AP_PASS].value.str=strdup("hotashell");
+        break;
 
       case PRF_HTTP_JS_LOCAL:
         Prefs[PRF_HTTP_JS_LOCAL].type=UINT8;
@@ -238,6 +246,10 @@ char tmp[30];
       case PRF_ALARM_TIMEOUT:
         Prefs[PRF_ALARM_TIMEOUT].type=UINT16;
         Prefs[PRF_ALARM_TIMEOUT].value.uint16=0;
+        break;
+      case PRF_ERROR_GRACE_COUNT:
+        Prefs[PRF_ERROR_GRACE_COUNT].type=UINT8;
+        Prefs[PRF_ERROR_GRACE_COUNT].value.uint8=5;
         break;
 
       case PRF_DBG_SERIAL:

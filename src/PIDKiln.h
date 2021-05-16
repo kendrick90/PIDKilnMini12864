@@ -1,3 +1,28 @@
+/*
+** PIDKiln v1.2 - high temperature kiln PID controller for ESP32
+**
+** Copyright (C) 2019-2021 - Adrian Siemieniak
+**
+** This program is free software; you can redistribute it and/or
+** modify it under the terms of the GNU General Public License
+** as published by the Free Software Foundation; either version 2
+** of the License.
+**
+** This program is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with this program; if not, write to the Free Software
+** Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+**
+************
+**
+** Some coding convention - used functions are in separate files, depending on what they do. So LCD stuff to LCD, HTTP/WWW to HTTP, rotary to INPUT etc.
+** All variables beeing global are written with capital leter on start of each word (or at least they should be). All definitions are all capital letters.
+**
+*/
 #include <Syslog.h>
 #include "MAX31855.h"
 #include <WiFi.h>
@@ -32,8 +57,8 @@ const int MAX_Prog_File_Size = 10240; // maximum file size (bytes) that can be u
 **
 */
 
-//#define EMR_RELAY_PIN 21
-#define SSR1_RELAY_PIN 22
+//#define EMR_RELAY_PIN 17
+#define SSR1_RELAY_PIN 21
 //#define SSR2_RELAY_PIN 22   // if you want to use additional SSR for second heater, uncoment this
 
 // MAX31855 variables/defs
@@ -144,11 +169,12 @@ String Program_desc, Program_name; // First line of the selected program file - 
 PROGRAM *Program_run;         // running program (made as copy of selected Program)
 uint8_t Program_run_size = 0; // number of entries in running program (since elements count from 0 - this value is actually bigger by 1 then numbers of steps)
 char *Program_run_desc = NULL, *Program_run_name = NULL;
-time_t Program_run_start = 0;    // date/time of started program
-time_t Program_run_end = 0;      // date/time when program ends - during program it's ETA
-int Program_run_step = -1;       // at which step are we now... (has to be it - so we can give it -1)
-uint16_t Program_start_temp = 0; // temperature on start of the program
-uint8_t Program_error = 0;       // if program finished with errors - remember number
+time_t Program_run_start = 0;            // date/time of started program
+time_t Program_run_end = 0;              // date/time when program ends - during program it's ETA
+int Program_run_step = -1;               // at which step are we now... (has to be it - so we can give it -1)
+uint16_t Program_start_temp = 0;         // temperature on start of the program
+uint8_t Program_error = 0;               // if program finished with errors - remember number
+byte TempA_errors = 0, TempB_errors = 0; // how many temperature read errors we have skipped
 
 typedef enum
 { // program menu positions
@@ -232,13 +258,14 @@ const char *LOG_Directory = "/logs";
 typedef enum
 { // program menu positions
   PRF_NONE,
+    PRF_WIFI_AP_NAME,
+  // PRF_WIFI_AP_USERNAME,
+  PRF_WIFI_AP_PASS,
   PRF_WIFI_SSID,
   PRF_WIFI_PASS,
   PRF_WIFI_MODE, // 0 - connect to AP if failed, be AP; 1 - connect only to AP; 2 - be only AP
   PRF_WIFI_RETRY_CNT,
-  PRF_WIFI_AP_NAME,
-  PRF_WIFI_AP_USERNAME,
-  PRF_WIFI_AP_PASS,
+
 
   PRF_HTTP_JS_LOCAL,
 
@@ -268,6 +295,7 @@ typedef enum
   PRF_MAX_HOUS_TEMP,
   PRF_THERMAL_RUN,
   PRF_ALARM_TIMEOUT,
+  PRF_ERROR_GRACE_COUNT,
 
   PRF_DBG_SERIAL,
   PRF_DBG_SYSLOG,
@@ -279,13 +307,13 @@ typedef enum
 
 const char *PrefsName[] = {
     "None",
+    "WiFi_AP_Name",
+    // "WiFi_AP_Username",
+    "WiFi_AP_Pass",
     "WiFi_SSID",
     "WiFi_Password",
     "WiFi_Mode",
     "WiFi_Retry_cnt",
-    "WiFi_AP_Name",
-    "WiFi_AP_Username",
-    "WiFi_AP_Pass",
     "HTTP_Local_JS",
     "Auth_Username",
     "Auth_Password",
@@ -309,6 +337,7 @@ const char *PrefsName[] = {
     "MAX_Housing_Temperature",
     "Thermal_Runaway",
     "Alarm_Timeout",
+    "MAX31855_Error_Grace_Count",
     "DBG_Serial",
     "DBG_Syslog",
     "DBG_Syslog_Srv",
@@ -349,8 +378,8 @@ struct PrefsStruct Prefs[PRF_end];
 ** Other stuff
 **
 */
-const char *PVer = "PIDKiln v1.2";
-const char *PDate = "2020.03.19";
+const char *PVer = "PIDKiln v1.2K";
+const char *PDate = "2021.05.16";
 
 // If defined debug - do debug, otherwise comment out all debug lines
 #define DBG if (DEBUG)
@@ -362,9 +391,6 @@ Syslog syslog(udpClient, SYSLOG_PROTO_IETF);
 #define JS_JQUERY "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
 #define JS_CHART "https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.bundle.min.js"
 #define JS_CHART_DS "https://cdn.jsdelivr.net/npm/chartjs-plugin-datasource"
-
-
-
 
 /*
 ** Function defs
@@ -453,23 +479,23 @@ void out(const char *s);
 void do_screenshot(AsyncWebServerRequest *request);
 void handleDoUpdate(AsyncWebServerRequest *request, const String &filename, size_t index, uint8_t *data, size_t len, bool final);
 bool _webAuth(AsyncWebServerRequest *request);
-boolean return_LCD_string(char* msg,char* rest, int mod, uint16_t screen_w);
+boolean return_LCD_string(char *msg, char *rest, int mod, uint16_t screen_w);
 void load_msg(char msg[MAX_CHARS_PL]);
-void DrawVline(uint16_t x,uint16_t y,uint16_t h);
-void Draw_Marked_string(char *str,uint8_t pos);
+void DrawVline(uint16_t x, uint16_t y, uint16_t h);
+void Draw_Marked_string(char *str, uint8_t pos);
 void DrawMenuEl(char *msg, uint16_t y, uint8_t cnt, uint8_t el, boolean sel);
-void LCD_display_mainv3(int dir=0, byte ctrl=0);
+void LCD_display_mainv3(int dir = 0, byte ctrl = 0);
 void LCD_display_mainv2();
 void LCD_display_mainv1();
 void LCD_display_main_view();
 void LCD_display_menu();
 void LCD_display_programs();
-void LCD_Display_program_delete(int dir=0, boolean pressed=0);
-void LCD_Display_program_full(int dir=0);
-void LCD_Display_program_summary(int dir,byte load_prg);
-void LCD_Display_quick_program(int dir,byte pos);
+void LCD_Display_program_delete(int dir = 0, boolean pressed = 0);
+void LCD_Display_program_full(int dir = 0);
+void LCD_Display_program_summary(int dir, byte load_prg);
+void LCD_Display_quick_program(int dir, byte pos);
 void LCD_Display_info();
-void LCD_Display_prefs(int dir=0);
+void LCD_Display_prefs(int dir = 0);
 void LCD_Display_about();
 void Restart_ESP();
 void LCD_Reconect_WiFi();
@@ -479,9 +505,7 @@ boolean check_valid_chars(byte a);
 boolean valid_filename(char *file);
 void Generate_INDEX();
 void rainbowCycle(uint32_t LED_SLOWDOWN);
-
-
-
+void configure_encoder(void);
 
 // Close cleanly file and delete file from SPIFFS
 //

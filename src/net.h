@@ -107,7 +107,7 @@ boolean Start_WiFi_AP(){
 boolean Start_WiFi_CLIENT(){
 
   if(!Prefs[PRF_WIFI_MODE].value.uint8) return 1;   // if WiFi disabled
-  if(strlen(Prefs[PRF_WIFI_SSID].value.str)<1 || strlen(Prefs[PRF_WIFI_PASS].value.str)<1) return 1;  // missing SSI or password
+  if(strlen(Prefs[PRF_WIFI_SSID].value.str)<1 || strlen(Prefs[PRF_WIFI_PASS].value.str)<1) return 1;  // missing SSID or password
 
   WiFi.mode(WIFI_STA);
    

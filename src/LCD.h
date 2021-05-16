@@ -22,18 +22,18 @@
 #define LCD_RESET 4  // RST on LCD
 #define LCD_CS 5     // RS on LCD
 #define LCD_CLOCK 14 // E on LCD
-#define LCD_DATA 23  // R/W on LCD
+#define LCD_DATA 22  // R/W on LCD
 #define ROTATION U8G2_R0
 #define LCD_CONTRAST 255
-#define SPI_CLK_PIN 14
-#define SPI_MOSI_PIN 13
-#define SPI_MISO_PIN 12
+// #define SPI_CLK_PIN 14
+// #define SPI_MOSI_PIN 13
+// #define SPI_MISO_PIN 12
 
 // You can switch hardware of software SPI interface to LCD. HW can be up to x10 faster - but requires special pins (and has some errors for me on 5V).
 //U8G2_ST7920_128X64_F_SW_SPI u8g2(U8G2_R2, /* clock=*/ LCD_CLOCK, /* data=*/ LCD_DATA, /* CS=*/ LCD_CS, /* reset=*/ LCD_RESET);
 // U8G2_ST7920_128X64_F_HW_SPI u8g2(U8G2_R2, /* CS=*/ LCD_CS, /* reset=*/ LCD_RESET);
-// U8G2_UC1701_MINI12864_F_4W_HW_SPI u8g2(ROTATION, LCD_CS, LCD_DATA, LCD_RESET);
-U8G2_UC1701_MINI12864_F_4W_SW_SPI u8g2(U8G2_R0, SPI_CLK_PIN, SPI_MOSI_PIN, LCD_CS, LCD_DATA, LCD_RESET);
+U8G2_UC1701_MINI12864_F_4W_HW_SPI u8g2(ROTATION, LCD_CS, LCD_DATA, LCD_RESET);
+// U8G2_UC1701_MINI12864_F_4W_SW_SPI u8g2(U8G2_R0, SPI_CLK_PIN, SPI_MOSI_PIN, LCD_CS, LCD_DATA, LCD_RESET);
 
 /*
 ** Helping functions
@@ -53,7 +53,7 @@ boolean return_LCD_string(char *msg, char *rest, int mod, uint16_t screen_w)
   if (strlen(msg) <= lnw)
   {
     rest[0] = '\0';
-    //DBG Serial.printf("[LCD] Line cut: line shorter then %d - skipping\n",lnw);
+    //DBG Serial.printf("[LCD] Line cut: line shorter than %d - skipping\n",lnw);
     return false;
   }
   strncpy(rest, msg + lnw + 1, strlen(msg) - lnw);
@@ -418,7 +418,7 @@ void LCD_display_mainv1()
   sprintf(msg, "Ct:%4.0fC St:%4.0fC Amb:%2.0fC", kiln_temp, set_temp, int_temp);
   u8g2.drawStr(x, y += chh, msg);
 
-  // Print Step number/all steps and if it's Run od Dwell, print proportional heat time of SSR and case temperature
+  // Print Step number/all steps and if it's Run or Dwell, print proportional heat time of SSR and case temperature
   //if(Program_run_step>-1) sprintf(msg,"Stp:%d/%d%c Ht:%3.0f%%  Cse:%2dC",Program_run_step+1,Program_run_size,(temp_incr!=0)?'r':'d',(pid_out/Prefs[PRF_PID_WINDOW].value.uint16)*100.0);
   if (Program_run_step > -1)
     sprintf(msg, "Stp:%d/%d%c Ht:%3.0f%% Cse:%.0fC", Program_run_step + 1, Program_run_size, (temp_incr != 0) ? 'r' : 'd', (pid_out / Prefs[PRF_PID_WINDOW].value.uint16) * 100 * PID_WINDOW_DIVIDER, case_temp);
@@ -1069,6 +1069,8 @@ void LCD_Display_prefs(int dir)
       sprintf(msg, "%s = %s", PrefsName[a], Prefs[a].value.str);
     else if (Prefs[a].type == VFLOAT)
       sprintf(msg, "%s = %.2f", PrefsName[a], Prefs[a].value.vfloat);
+    else if (Prefs[a].type == INT16)
+      sprintf(msg, "%s = %d", PrefsName[a], Prefs[a].value.int16);
     else if (a >= PRF_end)
       sprintf(msg, " ");
     else

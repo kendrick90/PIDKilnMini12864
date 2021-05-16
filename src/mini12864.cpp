@@ -29,9 +29,12 @@ Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_RGB + NEO_KHZ800);
 
 void configure_leds(void)
 {
-  strip.begin();                   // INITIALIZE NeoPixel strip object (REQUIRED)
-  strip.show();                    // Turn OFF all pixels ASAP
+  strip.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
+  strip.setPixelColor(0, 255, 0, 0);
+  strip.setPixelColor(1, 0, 255, 0);
+  strip.setPixelColor(2, 0, 0, 255);
   strip.setBrightness(BRIGHTNESS); // Set BRIGHTNESS to about 1/5 (max = 255)
+  strip.show(); // Turn on initial led colors
 }
 
 // void configure_sd(void)
@@ -96,7 +99,7 @@ void configure_leds(void)
 //   // ESP32Encoder::useInternalWeakPullResistors = UP;
 
 //   // use pin BTN_EN1 and BTN_EN2 for the first encoder
-//   encoder.attachSingleEdge(BTN_EN1, BTN_EN2);
+//   encoder.attachSingleEdge(ENCODER0_PINA, ENCODER0_PINB);
 //   // set starting count value after attaching
 //   encoder.setCount(0);
 

@@ -1,7 +1,7 @@
 /*
-** PIDKiln v1.1 - high temperature kiln PID controller for ESP32
+** PIDKiln v1.2 - high temperature kiln PID controller for ESP32
 **
-** Copyright (C) 2019-2020 - Adrian Siemieniak
+** Copyright (C) 2019-2021 - Adrian Siemieniak
 **
 ** This program is free software; you can redistribute it and/or
 ** modify it under the terms of the GNU General Public License
@@ -59,17 +59,16 @@
 */
 // #define TEMPLATE_PLACEHOLDER '~' // THIS DOESN'T WORK NOW FROM HERE - replace it in library! Arduino/libraries/ESPAsyncWebServer/src/WebResponseImpl.h
 
-// // Pointer to a log file
-// File CSVFile, LOGFile;
 
 // Main setup that invokes other subsetups to initialize other modules
 //
 void setup()
 {
+  configure_leds();
 
   // This should disable watchdog killing asynctcp and others - one of this should work :)
   // This is not recommended, but if Webserver/AsyncTCP will hang (that has happen to me) - this will at least do not reset the device (and potentially ruin program).
-  // ESP32 will continue to work properly even in AsynTCP will hang - there will be no HTTP connection. If you do not like this - comment out next 6 lines.
+  // ESP32 will continue to work properly even if AsynTCP hangs - there will be no HTTP connection. If you do not like this - comment out next 6 lines.
   esp_task_wdt_init(1, false);
   esp_task_wdt_init(2, false);
   rtc_wdt_protect_off();
@@ -152,7 +151,6 @@ void setup()
   // Setup all sensors/relays
   Setup_Addons();
 
-  configure_leds();
 }
 
 // Just a tiny loop - to be deleted ;)

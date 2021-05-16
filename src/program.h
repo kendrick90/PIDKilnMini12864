@@ -515,6 +515,7 @@ void START_Program()
   Program_start_temp = kiln_temp;
   Energy_Usage = 0;
   Program_error = 0;
+  TempA_errors=TempB_errors=0;  // Reset temperature errors
 
   Enable_EMR();
 
@@ -559,10 +560,10 @@ void Program_Loop(void *parameter)
   static uint16_t cnt1 = 0;
   uint32_t now;
 
-  rainbowCycle(0);
-
   for (;;)
   {
+    // rainbowCycle(10000);
+      // DBG dbgLog(LOG_DEBUG, "[KEND] ENCA = %d \t ENCB = %d\n", digitalRead(ENCODER0_PINA), digitalRead(ENCODER0_PINB));
 
     now = millis();
 
@@ -646,8 +647,7 @@ void Program_Loop(void *parameter)
 */
 void Program_Setup()
 {
-
-  // Start interupt timer handler - 1s
+   // Start interupt timer handler - 1s
   // Create semaphore to inform us when the timer has fired
   timerSemaphore = xSemaphoreCreateBinary();
 
@@ -678,4 +678,5 @@ void Program_Setup()
       NULL,           /* Parameter passed as input of the task */
       1,              /* Priority of the task. */
       NULL, 0);       /* Task handle. */
+      
 }

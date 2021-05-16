@@ -3,7 +3,7 @@
 // #include <U8g2lib.h>
 #include <Adafruit_NeoPixel.h>
 // #include <SD.h>
-// #include <ESP32Encoder.h>
+#include <ESP32Encoder.h>
 // #include <avdweb_Switch.h>
 // #include <Tone32.h>
 
@@ -38,5 +38,5 @@ void configure_leds(void);
 // void configure_encoder(void);
 // void doEncoder(void);
 // void doPushButtons(void);
-void rainbowCycle(uint32_t LED_SLOWDOWN);
+// void rainbowCycle(uint32_t LED_SLOWDOWN);
 // void testBuzzer(void);
